@@ -9,6 +9,9 @@ class VmixCommandLog extends Model
     protected $fillable = [
         'uuid',
         'vmix_connection_id',
+        'broadcast_run_id',
+        'broadcast_run_item_id',
+        'schedule_id',
         'command_name',
         'request_url',
         'request_payload',

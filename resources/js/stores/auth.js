@@ -18,7 +18,9 @@ export const useAuthStore = defineStore('auth', {
             }
 
             try {
-                const { data } = await api.get('/auth/me');
+                const { data } = await api.get('/auth/me', {
+                    timeout: 5000,
+                });
                 this.user = data;
             } catch (error) {
                 this.token = null;

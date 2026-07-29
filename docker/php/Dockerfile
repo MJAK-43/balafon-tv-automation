@@ -1,7 +1,10 @@
 FROM php:8.4-fpm
 
+ENV TZ=Europe/Paris
+
 RUN apt-get update && apt-get install -y \
     git \
+    tzdata \
     unzip \
     libpq-dev \
     libzip-dev \

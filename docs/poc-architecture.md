@@ -1,5 +1,18 @@
 # Balafon Broadcast Manager - Architecture POC
 
+## 0. Regles de cadrage obligatoires
+
+Les conclusions de l'audit vMix deviennent des regles d'architecture obligatoires:
+
+1. Balafon Broadcast Manager est la source de verite metier.
+2. vMix est uniquement le moteur d'execution temps reel.
+3. Les medias sont geres dans Balafon.
+4. Les playlists sont gerees dans Balafon.
+5. La programmation TV est geree dans Balafon.
+6. L'automatisation est pilotee par Balafon via Scheduler + API vMix + polling XML.
+
+Ces regles excluent toute architecture ou vMix devient le referentiel principal des medias, playlists ou programmes.
+
 ## 1. Vision
 
 Balafon Broadcast Manager est une plateforme web de planification TV et de pilotage d'un moteur de diffusion vMix via son API HTTP.
@@ -7,11 +20,12 @@ Balafon Broadcast Manager est une plateforme web de planification TV et de pilot
 Le POC doit permettre de:
 
 - gerer les utilisateurs et leurs droits
-- centraliser des medias exploitables a l'antenne
-- construire une grille TV planifiee
-- preparer et declencher des lives
-- dialoguer avec vMix pour charger, lancer et superviser la diffusion
-- automatiser les transitions via Laravel Scheduler
+- referencer des medias existants sans dupliquer les fichiers
+- composer des playlists editoriales dans Balafon
+- construire une grille TV plusieurs jours a l'avance
+- declencher automatiquement la diffusion
+- piloter vMix pour charger, lancer et superviser l'execution
+- preparer et suivre les lives
 - notifier les operateurs
 - journaliser toutes les actions critiques
 
@@ -20,21 +34,35 @@ Le POC doit permettre de:
 ### Stack
 
 - Backend: Laravel 12, PHP 8.4
-- Frontend: Vue 3, PrimeVue, TailwindCSS
+- Frontend: Vue 3, PrimeVue, TailwindCSS, Pinia, Heroicons
 - Base de donnees: PostgreSQL
 - Cache / queues / locks: Redis
 - Environnement local: Docker
 
 ### Choix structurants
 
-- DDD legere: decoupage par domaines metier sans sur-ingenierie
-- Architecture modulaire de type `app/Domains/*`
-- Services applicatifs pour l'orchestration
-- Repositories pour isoler l'acces aux donnees
-- Providers contractuels pour les integrations remplacables
+- DDD legere avec decoupage par domaines `app/Domains/*`
+- services applicatifs pour l'orchestration
+- repositories pour isoler l'acces aux donnees
+- providers contractuels pour les integrations remplacables
 - Jobs, Events, Listeners pour l'automatisation
 - API REST versionnee `api/v1`
-- Journalisation technique et metier differenciee
+- journalisation technique et metier differenciee
+- interface desktop-first pour usage regie TV
+- design premium type SaaS broadcast 2026
+
+### Hors perimetre MVP
+
+Ne pas developper dans ce cycle:
+
+- IA
+- RAG
+- assistant conversationnel
+- generation automatique de programmes
+- mediatheque complexe
+- S3
+- NAS
+- gestion documentaire
 
 ## 3. Structure cible du projet
 
@@ -48,25 +76,21 @@ app/
       Providers/
       Repositories/
       Services/
+    Audit/
+      Actions/
+      Models/
+      Repositories/
+      Services/
+    Channel/
+      Actions/
+      DTOs/
+      Enums/
+      Models/
+      Repositories/
+      Services/
     Dashboard/
       Queries/
       Services/
-    Media/
-      Actions/
-      DTOs/
-      Enums/
-      Models/
-      Repositories/
-      Services/
-      Policies/
-    Scheduling/
-      Actions/
-      DTOs/
-      Enums/
-      Models/
-      Repositories/
-      Services/
-      Policies/
     Live/
       Actions/
       DTOs/
@@ -74,11 +98,32 @@ app/
       Models/
       Repositories/
       Services/
-    Vmix/
-      Clients/
+    Media/
+      Actions/
       DTOs/
       Enums/
       Models/
+      Policies/
+      Repositories/
+      Services/
+    Notification/
+      Actions/
+      DTOs/
+      Services/
+    Playlist/
+      Actions/
+      DTOs/
+      Enums/
+      Models/
+      Policies/
+      Repositories/
+      Services/
+    Scheduling/
+      Actions/
+      DTOs/
+      Enums/
+      Models/
+      Policies/
       Repositories/
       Services/
     System/
@@ -87,13 +132,12 @@ app/
       Models/
       Repositories/
       Services/
-    Notification/
-      Actions/
+    Vmix/
+      Clients/
       DTOs/
-      Services/
-    Audit/
-      Actions/
+      Enums/
       Models/
+      Providers/
       Repositories/
       Services/
   Http/
@@ -114,17 +158,18 @@ resources/
   js/
     app/
       core/
+      layouts/
       modules/
         auth/
         dashboard/
         media/
+        playlist/
         scheduling/
         live/
         vmix/
         audit/
-      router/
-      layouts/
       pages/
+      router/
       services/
       stores/
       ui/
@@ -133,14 +178,10 @@ tests/
   Unit/
   Architecture/
 docker/
-  nginx/
-  php/
-  postgres/
-  redis/
 docs/
 ```
 
-## 4. Bounded Contexts
+## 4. Bounded contexts
 
 ### Auth
 
@@ -150,39 +191,57 @@ Responsabilites:
 - gestion des roles et permissions
 - securisation des endpoints
 
+### Channel
+
+Responsabilites:
+
+- definition des chaines diffusees
+- timezone et code antenne
+- statut d'exploitation
+
 ### Media
 
 Responsabilites:
 
-- catalogue media
-- metadonnees techniques
+- referencement de medias existants
+- metadonnees minimales de diffusion
 - validation de disponibilite
-- classement et recherche
+- recherche, filtre, categories et tags
+- previsualisation rapide
+
+### Playlist
+
+Responsabilites:
+
+- composition editoriale
+- ordonnancement des medias
+- calcul de duree totale
+- preparation de sequence executable
 
 ### Scheduling
 
 Responsabilites:
 
 - construction de la grille TV
-- programmation de diffusions
+- programmation des playlists par chaine
 - detection des conflits
-- calcul des transitions et fenetres horaires
+- calcul des fenetres horaires
 
 ### Live
 
 Responsabilites:
 
 - gestion des evenements live
-- preparation des scenes / sources
-- suivi de statut live
+- placeholders live dans la grille
+- suivi des depassements
 
 ### Vmix
 
 Responsabilites:
 
-- configuration de connexions vMix
+- configuration des connexions vMix
 - execution de commandes API HTTP
-- lecture d'etat
+- lecture d'etat XML
 - historique de commandes
 
 ### Notification
@@ -209,7 +268,7 @@ Responsabilites:
 - verification des prerequis applicatifs
 - detection vMix et verification de connectivite
 - collecte des signaux de sante systeme
-- preparation d'une future installation assistee multi-postes Windows
+- support du futur mode de licence
 
 ## 5. Couches applicatives
 
@@ -218,7 +277,7 @@ Responsabilites:
 - controllers API REST
 - form requests
 - api resources
-- Vue SPA admin
+- Vue SPA
 
 ### Application
 
@@ -229,7 +288,7 @@ Responsabilites:
 
 ### Domain
 
-- entites Eloquent
+- modeles Eloquent
 - enums
 - regles metier
 - interfaces de repositories
@@ -238,6 +297,7 @@ Responsabilites:
 
 - repositories Eloquent
 - client HTTP vMix
+- providers `RealVmixProvider` et `MockVmixProvider`
 - Redis locks
 - mailers
 - scheduler / queue workers
@@ -246,13 +306,13 @@ Responsabilites:
 
 ```mermaid
 flowchart LR
-    U[Operateur] --> W[Balafon Broadcast Manager]
-    A[Administrateur] --> W
-    W --> DB[(PostgreSQL)]
-    W --> R[(Redis)]
-    W --> VM[vMix HTTP API]
-    W --> SMTP[SMTP / Mail]
-    W --> FS[Stockage Media]
+    O[Operateur] --> B[Balafon Broadcast Manager]
+    A[Administrateur] --> B
+    B --> DB[(PostgreSQL)]
+    B --> R[(Redis)]
+    B --> VM[vMix HTTP API]
+    B --> FS[Stockage media local]
+    B --> SMTP[SMTP / Mail]
 ```
 
 ## 7. Diagramme des modules
@@ -260,20 +320,22 @@ flowchart LR
 ```mermaid
 flowchart TD
     Auth --> Dashboard
-    Media --> Scheduling
+    Channel --> Scheduling
+    Media --> Playlist
+    Playlist --> Scheduling
     Live --> Scheduling
     Scheduling --> Automation[Scheduler / Jobs]
     Automation --> Vmix
     Vmix --> Audit
+    Playlist --> Audit
     Scheduling --> Audit
     Live --> Audit
     Automation --> Notification
-    Auth --> Audit
     System --> Audit
     Dashboard --> System
 ```
 
-## 8. Diagramme de sequence - diffusion programmee
+## 8. Diagramme de sequence - diffusion automatisee
 
 ```mermaid
 sequenceDiagram
@@ -282,20 +344,26 @@ sequenceDiagram
     participant API as Laravel API
     participant SCH as Scheduler
     participant JOB as Broadcast Job
+    participant PLS as PlaylistExecutionService
+    participant VPS as VmixExecutionService
     participant VM as vMix API
     participant AUD as Audit Log
 
-    OP->>UI: cree une programmation
-    UI->>API: POST /api/v1/schedule-items
-    API->>AUD: trace la creation
+    OP->>UI: cree des medias, une playlist, puis une programmation
+    UI->>API: POST /api/v1/media-assets
+    UI->>API: POST /api/v1/playlists
+    UI->>API: POST /api/v1/schedules
+    API->>AUD: trace les creations
     API-->>UI: confirmation
 
     SCH->>JOB: declenche a l'heure prevue
-    JOB->>API: charge la programmation
-    JOB->>VM: addInput / setText / transition
-    VM-->>JOB: statut HTTP
-    JOB->>AUD: enregistre resultat
-    JOB-->>API: statut final
+    JOB->>API: charge le schedule
+    JOB->>PLS: construit la sequence de lecture
+    PLS->>VPS: envoie media par media
+    VPS->>VM: AddInput / PreviewInput / transition / Play
+    VM-->>VPS: statut HTTP
+    JOB->>VM: GET /api en polling
+    JOB->>AUD: journalise progression et resultat
 ```
 
 ## 9. Diagramme de classes simplifie
@@ -314,38 +382,42 @@ classDiagram
       +name
     }
 
-    class MediaAsset {
-      +id
-      +title
-      +type
-      +duration_seconds
-      +storage_path
-      +status
-    }
-
     class Channel {
       +id
       +name
+      +code
       +timezone
       +status
     }
 
-    class ScheduleItem {
+    class MediaAsset {
       +id
-      +channel_id
-      +media_asset_id
-      +live_event_id
-      +starts_at
-      +ends_at
-      +type
+      +title
+      +media_type
+      +file_path
+      +duration_seconds
       +status
     }
 
-    class LiveEvent {
+    class Playlist {
       +id
       +title
-      +planned_start
-      +planned_end
+      +status
+    }
+
+    class PlaylistItem {
+      +id
+      +playlist_id
+      +media_asset_id
+      +position
+    }
+
+    class Schedule {
+      +id
+      +channel_id
+      +playlist_id
+      +starts_at
+      +ends_at
       +status
     }
 
@@ -354,30 +426,28 @@ classDiagram
       +name
       +host
       +port
-      +api_password
       +status
     }
 
     class VmixCommandLog {
       +id
-      +vmix_connection_id
-      +command
-      +response_code
+      +command_name
       +status
+      +duration_ms
     }
 
     class AuditLog {
       +id
-      +actor_id
       +action
       +entity_type
       +entity_id
     }
 
     User --> Role
-    Channel --> ScheduleItem
-    MediaAsset --> ScheduleItem
-    LiveEvent --> ScheduleItem
+    MediaAsset --> PlaylistItem
+    Playlist --> PlaylistItem
+    Playlist --> Schedule
+    Channel --> Schedule
     VmixConnection --> VmixCommandLog
     User --> AuditLog
 ```
@@ -410,44 +480,7 @@ classDiagram
 - code
 - timestamps
 
-### 10.2 Media
-
-#### MediaAsset
-
-- id
-- uuid
-- title
-- slug
-- media_type: video, image, audio, lower_third, playlist
-- source_type: upload, external_url, live_source
-- storage_disk
-- storage_path
-- original_filename
-- mime_type
-- file_size
-- duration_seconds nullable
-- width nullable
-- height nullable
-- checksum nullable
-- metadata jsonb
-- status: draft, ready, archived, error
-- created_by
-- updated_by
-- timestamps
-
-#### MediaTag
-
-- id
-- name
-- slug
-- timestamps
-
-#### MediaAssetTag
-
-- media_asset_id
-- media_tag_id
-
-### 10.3 Scheduling
+### 10.2 Channel
 
 #### Channel
 
@@ -457,23 +490,72 @@ classDiagram
 - code
 - timezone
 - description nullable
-- is_active
+- status
 - timestamps
 
-#### ScheduleItem
+### 10.3 Media
+
+#### MediaAsset
+
+- id
+- uuid
+- title
+- description nullable
+- media_type: program, movie, advertisement, jingle, live_placeholder
+- file_path
+- duration_seconds nullable
+- status: ready, archived
+- created_by
+- updated_by
+- timestamps
+
+#### MediaCategory
+
+- id
+- uuid
+- name
+- slug
+- timestamps
+
+#### MediaTag
+
+- id
+- uuid
+- name
+- slug
+- timestamps
+
+### 10.4 Playlist
+
+#### Playlist
+
+- id
+- uuid
+- title
+- description nullable
+- status
+- timestamps
+
+#### PlaylistItem
+
+- id
+- playlist_id
+- media_asset_id
+- position
+- duration_seconds nullable
+- timestamps
+
+### 10.5 Scheduling
+
+#### Schedule
 
 - id
 - uuid
 - channel_id
-- media_asset_id nullable
-- live_event_id nullable
-- title
-- item_type: media, live, filler, manual
+- playlist_id
 - starts_at
-- ends_at
-- duration_seconds
-- status: draft, scheduled, queued, on_air, completed, cancelled, failed
-- automation_status: pending, processing, sent, acknowledged, error
+- ends_at nullable
+- status: draft, scheduled, on_air, completed, failed
 - vmix_connection_id nullable
 - notes nullable
 - metadata jsonb
@@ -484,7 +566,7 @@ classDiagram
 #### ScheduleConflict
 
 - id
-- schedule_item_id
+- schedule_id
 - conflict_type: overlap, missing_media, missing_vmix, invalid_duration
 - severity: low, medium, high
 - message
@@ -492,7 +574,7 @@ classDiagram
 - resolved_by nullable
 - timestamps
 
-### 10.4 Live
+### 10.6 Live
 
 #### LiveEvent
 
@@ -506,14 +588,12 @@ classDiagram
 - actual_start_at nullable
 - actual_end_at nullable
 - status: draft, prepared, ready, live, ended, cancelled, failed
-- vmix_input_name nullable
-- stream_url nullable
 - metadata jsonb
 - created_by
 - updated_by
 - timestamps
 
-### 10.5 vMix
+### 10.7 vMix
 
 #### VmixConnection
 
@@ -530,29 +610,21 @@ classDiagram
 - last_health_check_at nullable
 - timestamps
 
-#### VmixPreset
-
-- id
-- vmix_connection_id
-- name
-- preset_type: input, transition, overlay, shortcut
-- command_template
-- metadata jsonb
-- timestamps
-
 #### VmixCommandLog
 
 - id
 - uuid
 - vmix_connection_id
-- schedule_item_id nullable
+- schedule_id nullable
 - live_event_id nullable
 - command_name
-- command_url
+- request_url nullable
 - request_payload jsonb nullable
 - response_code nullable
 - response_body text nullable
 - status: pending, success, failed
+- duration_ms nullable
+- error_message nullable
 - executed_at
 - timestamps
 
@@ -597,7 +669,7 @@ classDiagram
 - metadata jsonb
 - timestamps
 
-### 10.6 Notifications
+### 10.8 Notifications
 
 #### NotificationRule
 
@@ -620,7 +692,7 @@ classDiagram
 - error_message nullable
 - timestamps
 
-### 10.7 Audit
+### 10.9 Audit
 
 #### AuditLog
 
@@ -641,14 +713,15 @@ classDiagram
 - `users` n..n `roles`
 - `roles` n..n `permissions`
 - `media_assets` n..n `media_tags`
-- `channels` 1..n `schedule_items`
+- `playlists` 1..n `playlist_items`
+- `media_assets` 1..n `playlist_items`
+- `channels` 1..n `schedules`
+- `playlists` 1..n `schedules`
 - `channels` 1..n `live_events`
-- `media_assets` 1..n `schedule_items`
-- `live_events` 1..n `schedule_items` selon le cas d'usage
-- `vmix_connections` 1..n `schedule_items`
+- `vmix_connections` 1..n `schedules`
 - `vmix_connections` 1..n `vmix_command_logs`
+- `schedules` 1..n `schedule_conflicts`
 - `system_diagnostics` nourrit `dashboard` et `audit_logs`
-- `schedule_items` 1..n `schedule_conflicts`
 - `users` 1..n `audit_logs`
 
 ## 12. Migrations initiales
@@ -660,38 +733,39 @@ Ordre recommande:
 3. `create_permissions_table`
 4. `create_role_user_table`
 5. `create_permission_role_table`
-6. `create_media_assets_table`
-7. `create_media_tags_table`
-8. `create_media_asset_tag_table`
-9. `create_channels_table`
-10. `create_live_events_table`
-11. `create_vmix_connections_table`
-12. `create_vmix_presets_table`
-13. `create_schedule_items_table`
-14. `create_schedule_conflicts_table`
-15. `create_vmix_command_logs_table`
-16. `create_system_diagnostics_table`
-17. `create_licenses_table`
-18. `create_notification_rules_table`
-19. `create_notification_logs_table`
-20. `create_audit_logs_table`
+6. `create_channels_table`
+7. `create_media_assets_table`
+8. `create_media_categories_table`
+9. `create_media_tags_table`
+10. `create_media_asset_tag_table`
+11. `create_playlists_table`
+12. `create_playlist_items_table`
+13. `create_live_events_table`
+14. `create_vmix_connections_table`
+15. `create_schedules_table`
+16. `create_schedule_conflicts_table`
+17. `create_vmix_command_logs_table`
+18. `create_system_diagnostics_table`
+19. `create_licenses_table`
+20. `create_notification_rules_table`
+21. `create_notification_logs_table`
+22. `create_audit_logs_table`
 
 ### Contraintes de schema importantes
 
 - UUID public sur les agregats exposes par API
 - index sur `starts_at`, `ends_at`, `status`, `channel_id`
 - index sur `executed_at` et `status` pour les logs vMix
-- index GIN sur colonnes `jsonb` utiles pour recherche future
-- foreign keys explicites avec strategie `nullOnDelete()` ou `cascadeOnDelete()` selon le besoin
+- foreign keys explicites avec `nullOnDelete()` ou `cascadeOnDelete()` selon le besoin
 
-### Regles de cohérence a imposer
+### Regles de coherence a imposer
 
-- `schedule_items.media_asset_id` XOR `schedule_items.live_event_id` pour un item typique
-- `ends_at > starts_at`
+- `playlist_items.position` unique par playlist
+- `schedules.playlist_id` obligatoire pour le MVP
+- `ends_at > starts_at` si `ends_at` est renseigne
 - `duration_seconds >= 0`
-- `vmix_connections.host` unique par environnement si necessaire
 - `channels.code` unique
-- `media_assets.checksum` indexable pour deduplication
+- `media_assets.file_path` doit etre valide sur le poste d'execution cible
 
 ## 13. Repositories et services
 
@@ -699,9 +773,10 @@ Ordre recommande:
 
 - `UserRepositoryInterface`
 - `RoleRepositoryInterface`
-- `MediaAssetRepositoryInterface`
 - `ChannelRepositoryInterface`
-- `ScheduleItemRepositoryInterface`
+- `MediaAssetRepositoryInterface`
+- `PlaylistRepositoryInterface`
+- `ScheduleRepositoryInterface`
 - `LiveEventRepositoryInterface`
 - `VmixConnectionRepositoryInterface`
 - `VmixCommandLogRepositoryInterface`
@@ -711,16 +786,19 @@ Ordre recommande:
 
 - `AuthenticationService`
 - `DashboardService`
-- `MediaIngestService`
 - `MediaCatalogService`
+- `PlaylistService`
 - `SchedulePlannerService`
 - `ScheduleConflictService`
 - `BroadcastAutomationService`
+- `PlaylistExecutionService`
+- `VmixExecutionService`
 - `LiveEventService`
 - `VmixApiService`
 - `VmixHealthCheckService`
 - `NotificationService`
 - `AuditService`
+- `LicenseService`
 
 ### Providers contractuels
 
@@ -749,14 +827,29 @@ Ordre recommande:
 - `PUT /api/v1/media-assets/{uuid}`
 - `DELETE /api/v1/media-assets/{uuid}`
 
+### Playlist
+
+- `GET /api/v1/playlists`
+- `POST /api/v1/playlists`
+- `GET /api/v1/playlists/{uuid}`
+- `PUT /api/v1/playlists/{uuid}`
+- `DELETE /api/v1/playlists/{uuid}`
+- `POST /api/v1/playlists/{uuid}/items`
+- `PUT /api/v1/playlists/{uuid}/items/reorder`
+- `DELETE /api/v1/playlists/{uuid}/items/{itemUuid}`
+
 ### Scheduling
 
 - `GET /api/v1/channels`
-- `GET /api/v1/schedule-items`
-- `POST /api/v1/schedule-items`
-- `PUT /api/v1/schedule-items/{uuid}`
-- `POST /api/v1/schedule-items/{uuid}/queue`
-- `POST /api/v1/schedule-items/{uuid}/cancel`
+- `GET /api/v1/schedules`
+- `POST /api/v1/schedules`
+- `GET /api/v1/schedules/{uuid}`
+- `PUT /api/v1/schedules/{uuid}`
+- `DELETE /api/v1/schedules/{uuid}`
+- `POST /api/v1/schedules/duplicate-day`
+- `POST /api/v1/schedules/duplicate-week`
+- `POST /api/v1/schedules/{uuid}/queue`
+- `POST /api/v1/schedules/{uuid}/cancel`
 - `GET /api/v1/schedule-conflicts`
 
 ### Live
@@ -783,7 +876,7 @@ Ordre recommande:
 
 ### Taches Laravel Scheduler
 
-- verification chaque minute des `schedule_items` a lancer
+- verification chaque minute des `schedules` a lancer
 - health check des connexions vMix toutes les 2 minutes
 - detection des conflits de programmation toutes les 5 minutes
 - relance des notifications en echec
@@ -797,7 +890,6 @@ Ordre recommande:
 - `CheckVmixHealthJob`
 - `DetectScheduleConflictsJob`
 - `SendNotificationJob`
-- `WriteAuditLogJob` si externalisation utile
 
 ### Mecanismes de fiabilite
 
@@ -815,26 +907,42 @@ Ordre recommande:
 - TailwindCSS pour layout et theming
 - Pinia pour l'etat
 - Vue Router pour les modules
-- Axios ou client REST dedie
 
-### Ecrans du POC
+### Design system
+
+- `AppLayout`
+- `Sidebar`
+- `Topbar`
+- `StatCard`
+- `DataTable`
+- `StatusBadge`
+- `Timeline`
+- `SchedulerCalendar`
+- `AlertCard`
+- `ActivityFeed`
+- `BroadcastStatusCard`
+- `EmptyState`
+- `LoadingState`
+
+### Ecrans MVP
 
 - login
-- dashboard temps reel
+- dashboard broadcast temps reel
 - bibliotheque media
-- calendrier / grille TV
+- playlists
+- programmation TV
 - gestion des lives
 - configuration vMix
 - audit trail
 
 ### Direction UI 2026
 
-- interface SaaS claire et dense
-- navigation laterale persistante
-- cartes analytiques contrastées
-- timeline visuelle pour la programmation
-- etat vMix visible en permanence
-- responsive desktop-first puis tablette
+- dark mode par defaut
+- support light mode
+- palette noir profond / gris premium / accent rouge-orange
+- densite de supervision type regie TV
+- timeline broadcast visuelle et impressionnante
+- experience comparable a un produit SaaS broadcast premium
 
 ## 17. Strategie de tests
 
@@ -842,21 +950,23 @@ Ordre recommande:
 
 - services
 - policies
-- rules de planification
-- client vMix mocke
+- regles de planification
+- providers vMix mockes
 
 ### Feature
 
 - auth API
 - CRUD media
+- CRUD playlist
 - CRUD programmation
 - workflow live
 - tests de permissions
 
-### Architecture
+### Automation
 
-- conventions de namespaces
-- dependances interdites entre domaines si necessaire
+- tests `schedule -> playlist -> media -> vmix`
+- tests de journalisation `audit_logs` et `vmix_command_logs`
+- tests de reprise sur erreur
 
 ## 18. Docker local
 
@@ -869,13 +979,6 @@ Services recommandes:
 - `node` ou service frontend build
 - `mailpit`
 
-Volumes:
-
-- code source
-- cache composer
-- node_modules si besoin
-- donnees postgres
-
 Ports:
 
 - app web `8080`
@@ -886,17 +989,15 @@ Ports:
 
 ## 19. Ordre final recommande
 
-L'ordre de delivery retenu pour ce POC est le suivant:
-
 0. Validation API vMix
 1. Auth + Roles
-2. Bibliotheque Media
-3. Chaines
-4. Programmation TV
+2. Media
+3. Playlist
+4. Scheduling TV
 5. Detection Conflits
-6. Automatisation Scheduler
+6. Automatisation Broadcast
 7. Logs de Diffusion
-8. Gestion Lives
+8. Live
 9. Notifications
 10. Dashboard Temps Reel
 11. Publicites
@@ -904,172 +1005,18 @@ L'ordre de delivery retenu pour ce POC est le suivant:
 13. Rapports
 14. Assistant IA
 
-## 20. Phasage de developpement detaille
+## 20. Recommandation immediate
 
-### Phase 0 - Validation API vMix
+Le prochain cycle de developpement doit couvrir la chaine critique suivante:
 
-- valider la version cible de vMix
-- lister les endpoints HTTP reellement exploitables pour le POC
-- verifier authentification, timeouts et formats de reponse
-- preparer un client `VmixApiService` minimal avec tests de connectivite
-- documenter les commandes critiques: chargement input, transition, texte, overlays, status
+1. referencement de medias existants
+2. creation de playlists
+3. programmation par chaine
+4. detection de conflits
+5. execution automatique via Scheduler
+6. pilotage vMix via `RealVmixProvider`
+7. journalisation complete
 
-### Phase 1 - Auth + Roles
+Le succes du MVP est atteint lorsque Balafon demontre sans intervention humaine:
 
-- bootstrap Laravel 12 + Vue 3 + PrimeVue + Tailwind
-- Docker local
-- authentification SPA via Sanctum
-- roles et permissions minimaux
-- journalisation des connexions
-
-### Phase 2 - Bibliotheque Media
-
-- modele `MediaAsset`
-- upload et validation de fichiers
-- extraction de metadonnees
-- tagging, filtres et recherche
-- ecran catalogue responsive
-
-### Phase 3 - Chaines
-
-- modele `Channel`
-- CRUD chaines
-- parametrage timezone, statut et liaison vMix par defaut
-- base fonctionnelle pour multi-canal
-
-### Phase 4 - Programmation TV
-
-- modele `ScheduleItem`
-- CRUD programmation
-- vue calendrier / timeline
-- affectation media ou live
-- regles initiales de validation temporelle
-
-### Phase 5 - Detection Conflits
-
-- moteur `ScheduleConflictService`
-- overlaps, medias manquants, fenetres invalides, vMix absent
-- file d'anomalies exploitable par les operateurs
-- alertes pre-automation
-
-### Phase 6 - Automatisation Scheduler
-
-- taches Laravel Scheduler
-- `ProcessScheduledBroadcastJob`
-- locks Redis par chaine
-- reprise sur erreur et retries
-- execution des commandes vMix au bon timing
-
-### Phase 7 - Logs de Diffusion
-
-- `VmixCommandLog`
-- `AuditLog`
-- corridation entre programmation, live, operateur et commandes envoyees
-- filtres d'investigation
-
-### Phase 8 - Gestion Lives
-
-- modele `LiveEvent`
-- preparation, lancement, cloture
-- liaison grille TV / vMix
-- suivi de statuts en temps reel
-
-### Phase 9 - Notifications
-
-- notifications email sur erreurs critiques
-- notifications de conflits et echecs automation
-- journal de notifications
-
-### Phase 10 - Dashboard Temps Reel
-
-- indicateurs on-air
-- prochaine diffusion
-- etat des chaines
-- etat des connexions vMix
-- resume des alertes et incidents
-
-### Phase 11 - Publicites
-
-- modele `AdSlot` ou extension de `ScheduleItem`
-- categorisation pub
-- regles de rotation simples pour le POC
-- insertion dans la grille
-- base de reporting publicitaire
-
-### Phase 12 - Jingles
-
-- modele `JinglePackage` ou usage specialise de `MediaAsset`
-- regles d'insertion avant/apres contenu
-- presets vMix associes
-- automatisation simple d'habillage antenne
-
-### Phase 13 - Rapports
-
-- rapports de diffusion
-- rapports d'erreurs
-- rapports de consommation media
-- exports CSV / PDF a definir plus tard
-
-### Phase 14 - Assistant IA
-
-- aide a la planification
-- suggestion de remplissage de grille
-- detection d'anomalies de programmation
-- assistance operateur sur incidents
-- couche strictement non critique pour l'execution temps reel
-
-## 21. Impacts d'architecture des modules additionnels
-
-### Publicites
-
-- peut etre implemente en V1 via `ScheduleItem.item_type = ad`
-- si la monetisation devient importante, prevoir un sous-domaine `Advertising`
-- entites futures: `AdCampaign`, `AdCreative`, `AdSlot`, `AdPlayLog`
-
-### Jingles
-
-- peut etre implemente en V1 via `MediaAsset.media_type = jingle`
-- l'automatisation devra supporter des triggers avant/apres programme
-- entites futures: `JingleRule`, `JinglePack`
-
-### Rapports
-
-- s'appuie sur `schedule_items`, `vmix_command_logs`, `audit_logs`, `notification_logs`
-- idealement exposer une couche `Reporting` en lecture seule
-
-### Assistant IA
-
-- doit rester decouple de la chaine critique de diffusion
-- fonctionne comme moteur de recommandation et d'analyse
-- ne doit jamais lancer directement une commande vMix sans validation explicite
-
-## 22. Decisions techniques recommandees
-
-- utiliser Sanctum pour un POC SPA securise
-- utiliser `spatie/laravel-permission` seulement si la granularite RBAC doit aller vite; sinon tables maison pour garder le controle
-- utiliser `spatie/laravel-data` uniquement si l'equipe accepte cette dependance; sinon DTOs natifs simples
-- encapsuler l'API vMix dans un client unique testable
-- garder les Eloquent models simples et pousser la logique dans les services
-
-## 23. Risques principaux
-
-- derive fonctionnelle due aux modules tardifs `Publicites`, `Jingles`, `Assistant IA`
-- derive fonctionnelle sur la logique de diffusion temps reel
-- gestion imparfaite des conflits de grille
-- heterogeneite des commandes vMix selon version cible
-- ambiguite entre automation systeme et action manuelle operateur
-- sous-estimation des besoins de monitoring et reprise sur incident
-
-## 24. Recommandation immediate
-
-Commencer par un squelette executable couvrant:
-
-1. validation reelle de l'API vMix cible
-2. bootstrap Docker + Laravel + Vue
-3. Auth + RBAC minimal
-4. domaines `Media`, `Scheduling`, `Vmix`, `Audit`
-5. migrations de base
-6. premier endpoint `POST /schedule-items`
-7. premier job `ProcessScheduledBroadcastJob`
-
-Ce socle permet de valider tres tot la chaine critique: programmation -> automatisation -> appel vMix -> journalisation.
+`Media -> Playlist -> Scheduling -> Automation -> vMix -> Diffusion`

@@ -1,0 +1,26 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('playlist_items', function (Blueprint $table): void {
+            $table->id();
+            $table->uuid('uuid')->unique();
+            $table->foreignId('playlist_id')->constrained()->cascadeOnDelete();
+            $table->unsignedInteger('position');
+            $table->foreignId('media_asset_id')->constrained('media_assets')->cascadeOnDelete();
+            $table->timestamps();
+            $table->unique(['playlist_id', 'position']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('playlist_items');
+    }
+};

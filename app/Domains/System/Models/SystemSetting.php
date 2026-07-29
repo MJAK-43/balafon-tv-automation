@@ -1,0 +1,15 @@
+<?php
+
+namespace App\Domains\System\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class SystemSetting extends Model
+{
+    public $timestamps = false;
+
+    protected $fillable = [
+        'key',
+        'value',
+    ];
+}

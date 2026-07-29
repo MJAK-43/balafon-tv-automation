@@ -3,6 +3,8 @@
 namespace App\Domains\Dashboard\Services;
 
 use App\Domains\Audit\Models\AuditLog;
+use App\Domains\Channel\Models\Channel;
+use App\Domains\Playlist\Models\Playlist;
 use App\Domains\System\Models\SystemDiagnostic;
 use App\Domains\Vmix\Models\VmixCommandLog;
 use App\Domains\Vmix\Services\VmixApiService;
@@ -39,6 +41,10 @@ class DashboardService
         return [
             'vmix' => $vmix,
             'connections' => $this->vmix->listConnections(),
+            'metrics' => [
+                'channels_count' => Channel::query()->count(),
+                'playlists_count' => Playlist::query()->count(),
+            ],
             'system' => SystemDiagnostic::query()->latest('checked_at')->first(),
             'latest_audits' => AuditLog::query()->latest('created_at')->limit(10)->get(),
             'latest_vmix_tests' => VmixCommandLog::query()->latest('executed_at')->limit(10)->get(),

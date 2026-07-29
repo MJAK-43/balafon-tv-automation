@@ -7,10 +7,357 @@
 @source "../**/*.vue";
 
 @theme {
-    --font-sans: 'Space Grotesk', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Aptos', 'Segoe UI Variable', ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+    color-scheme: dark;
+    --ink-0: #080a0c;
+    --ink-1: #0d1013;
+    --ink-2: #12161a;
+    --ink-3: #181d22;
+    --line: rgba(240, 236, 226, 0.11);
+    --line-strong: rgba(240, 236, 226, 0.19);
+    --paper: #f4f0e7;
+    --muted: #949b9f;
+    --signal: #ff4d2e;
+    --signal-bright: #ff6a4d;
+    --live: #b8f45c;
+    --warning: #ffc857;
+    --danger: #ff5c75;
+    --panel-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
+}
+
+* {
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 77, 46, 0.6) rgba(255, 255, 255, 0.035);
+}
+
+html {
+    background: var(--ink-0);
 }
 
 body {
+    min-width: 320px;
+    margin: 0;
+    background: var(--ink-0);
+    color: var(--paper);
     font-family: var(--font-sans);
+    font-feature-settings: 'ss01' 1, 'cv02' 1, 'cv03' 1;
+    text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+button,
+a {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 3px;
+}
+
+button:disabled {
+    cursor: not-allowed;
+}
+
+::selection {
+    background: rgba(255, 77, 46, 0.34);
+    color: #fff;
+}
+
+#app {
+    min-height: 100vh;
+}
+
+.app-shell {
+    position: relative;
+    min-height: 100vh;
+    isolation: isolate;
+    background:
+        radial-gradient(circle at 92% -10%, rgba(255, 77, 46, 0.14), transparent 28rem),
+        radial-gradient(circle at 22% 110%, rgba(184, 244, 92, 0.05), transparent 30rem),
+        var(--ink-0);
+}
+
+.app-shell::before {
+    position: fixed;
+    z-index: -1;
+    inset: 0;
+    pointer-events: none;
+    content: '';
+    opacity: 0.24;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(to bottom, black, transparent 82%);
+}
+
+.workspace-shell {
+    width: min(100%, 1920px);
+    min-height: 100vh;
+    margin-inline: auto;
+    padding: 14px;
+}
+
+.workspace-main {
+    min-width: 0;
+}
+
+.workspace-content {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 18px;
+    padding: 18px 0 96px;
+}
+
+.workspace-content > * {
+    animation: rise-in 420ms both cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.workspace-content > *:nth-child(2) { animation-delay: 50ms; }
+.workspace-content > *:nth-child(3) { animation-delay: 90ms; }
+.workspace-content > *:nth-child(4) { animation-delay: 130ms; }
+
+.display-type {
+    font-family: 'Bahnschrift', 'DIN Alternate', 'Aptos Display', sans-serif;
+    font-stretch: condensed;
+}
+
+.surface-panel {
+    border: 1px solid var(--line);
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.025), transparent 42%),
+        rgba(18, 22, 26, 0.91);
+    box-shadow: var(--panel-shadow);
+}
+
+.hairline-label {
+    color: #7e8589;
+    font-size: 0.66rem;
+    font-weight: 650;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+}
+
+.signal-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--live);
+    box-shadow: 0 0 0 5px rgba(184, 244, 92, 0.08), 0 0 18px rgba(184, 244, 92, 0.35);
+}
+
+.app-shell input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+.app-shell select,
+.app-shell textarea {
+    border-color: var(--line) !important;
+    background-color: rgba(8, 10, 12, 0.68) !important;
+    color: var(--paper) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.app-shell input::placeholder,
+.app-shell textarea::placeholder {
+    color: #666e73 !important;
+}
+
+.app-shell input:not([type='checkbox']):not([type='radio']):not([type='range']):focus,
+.app-shell select:focus,
+.app-shell textarea:focus {
+    border-color: rgba(255, 77, 46, 0.72) !important;
+    box-shadow: 0 0 0 4px rgba(255, 77, 46, 0.09);
+}
+
+.app-shell select,
+.p-dialog select {
+    color-scheme: dark;
+    background-color: rgba(8, 10, 12, 0.92) !important;
+    color: var(--paper) !important;
+}
+
+/* Windows can ignore the native popup background while keeping the option color. */
+.app-shell option,
+.app-shell optgroup,
+.p-dialog option,
+.p-dialog optgroup {
+    background-color: #ffffff !important;
+    color: #111418 !important;
+}
+
+.app-shell button.bg-amber-500,
+.app-shell a.bg-amber-500 {
+    background: var(--signal) !important;
+    color: #fff !important;
+    box-shadow: 0 14px 35px rgba(255, 77, 46, 0.2) !important;
+}
+
+.app-shell button.bg-amber-500:hover,
+.app-shell a.bg-amber-500:hover {
+    background: var(--signal-bright) !important;
+}
+
+.app-shell .accent-amber-500 {
+    accent-color: var(--signal);
+}
+
+.app-shell table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.app-shell thead {
+    background: rgba(255, 255, 255, 0.025) !important;
+}
+
+.app-shell tbody tr {
+    transition: background-color 160ms ease;
+}
+
+.app-shell tbody tr:hover {
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.workspace-content :is(section, article, aside, div)[class*="border-white/"] {
+    border-color: var(--line) !important;
+}
+
+.workspace-content :is(section, article, aside, div)[class*="bg-[#0f1728]"],
+.workspace-content :is(section, article, aside, div)[class*="bg-[#121a2b]"],
+.workspace-content :is(section, article, aside, div)[class*="bg-[#101728]"],
+.workspace-content :is(section, article, aside, div)[class*="bg-slate-950/"],
+.workspace-content :is(section, article, aside, div)[class*="bg-slate-900"] {
+    background-color: rgba(17, 21, 25, 0.9) !important;
+    background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.022), transparent 48%) !important;
+}
+
+.workspace-content :is(section, article, aside)[class*="rounded-"][class*="border"] {
+    box-shadow: 0 20px 55px rgba(0, 0, 0, 0.19);
+}
+
+.workspace-content label > :is(span, p):first-child {
+    color: #858d92;
+    font-weight: 560;
+}
+
+.workspace-content button[class*="border-white/"] {
+    border-color: var(--line-strong) !important;
+    background-color: rgba(255, 255, 255, 0.025);
+}
+
+.workspace-content button[class*="border-white/"]:hover {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.p-dialog {
+    overflow: hidden;
+    border: 1px solid var(--line-strong) !important;
+    border-radius: 24px !important;
+    background: #111519 !important;
+    color: var(--paper) !important;
+    box-shadow: 0 40px 120px rgba(0, 0, 0, 0.55) !important;
+}
+
+.p-dialog-header,
+.p-dialog-content {
+    background: transparent !important;
+    color: inherit !important;
+}
+
+.p-dialog-header {
+    padding: 24px 26px 12px !important;
+}
+
+.p-dialog-content {
+    padding: 16px 26px 26px !important;
+}
+
+.p-dialog-mask {
+    background: rgba(3, 4, 5, 0.74) !important;
+    backdrop-filter: blur(12px);
+}
+
+.p-dialog .text-slate-900,
+.p-dialog .text-slate-700,
+.p-dialog .text-slate-600 {
+    color: var(--paper) !important;
+}
+
+.p-dialog .bg-white,
+.p-dialog .bg-slate-50 {
+    background: rgba(255, 255, 255, 0.035) !important;
+}
+
+.p-dialog .border-slate-200 {
+    border-color: var(--line) !important;
+}
+
+.page-enter-active,
+.page-leave-active {
+    transition: opacity 180ms ease, transform 220ms ease;
+}
+
+.page-enter-from {
+    opacity: 0;
+    transform: translateY(8px);
+}
+
+.page-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+}
+
+@keyframes rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes live-pulse {
+    50% {
+        opacity: 0.45;
+        transform: scale(0.82);
+    }
+}
+
+@media (min-width: 1280px) {
+    .workspace-shell {
+        display: grid;
+        grid-template-columns: 270px minmax(0, 1fr);
+        gap: 14px;
+    }
+
+    .workspace-content {
+        padding: 18px 4px 32px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }

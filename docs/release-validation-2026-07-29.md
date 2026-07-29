@@ -1,12 +1,19 @@
 # Release validation report: 2026-07-29
 
+Windows distribution artifacts were rebuilt on 2026-07-30 after improving the
+launchers and generating the Inno Setup installer. Application and vMix test
+results below are unchanged.
+
 ## Candidate
 
 - Branch: `release/windows-vmix-25-29`
 - Candidate: `v0.1.0-rc.1`
 - Archive: `Balafon-0.1.0-rc.1-windows-x64.zip`
-- Archive size: 60 MB
-- SHA-256: `BF0B461318F31A69650074C2EFAF4ADCA0BDF0D7156DD771317CE942BEA55F85`
+- Archive size: 60.01 MB
+- SHA-256: `346787A205959EFC1E8B1AF3E8549908DFC2E54DD1CCABACEF6D741CA2696E31`
+- Installer: `Balafon-Setup.exe`
+- Installer size: 43.07 MB
+- Installer SHA-256: `95218D5D3785186CF86941F53804F3A9685FCD27EC4F9A0621EC3E6821C72530`
 
 ## Automated validation
 
@@ -43,6 +50,9 @@ larger than 500 kB after minification.
 | Scheduler startup and shutdown | PASS |
 | Server shutdown without residual PHP process | PASS |
 | ZIP content inspection | PASS — 10,347 entries |
+| Inno Setup compilation | PASS — Inno Setup 6.7.3 |
+| Installer metadata | PASS — version 0.1.0-rc.1 |
+| Installer execution on a second PC | NOT RUN |
 
 ## vMix validation
 
@@ -67,8 +77,9 @@ until the real-vMix matrix in `release-checklist-vmix-25-29.md` is completed.
 
 ## Remaining release constraints
 
-- Inno Setup is not installed, so no `.exe` installer was compiled.
-- The portable ZIP is installable through
+- The installer is not signed with a commercial code-signing certificate, so
+  Windows SmartScreen may display a warning.
+- The portable ZIP remains installable through
   `scripts\install_windows_tester.cmd`.
-- GitHub CLI authentication is required before creating the remote pull request
-  and GitHub Release.
+- The real-vMix matrix and an installer run on a separate Windows PC still need
+  to be completed before production certification.

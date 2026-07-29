@@ -1,6 +1,10 @@
 /.phpunit.cache
 /.tmp
-/dist
+/dist/*
+!/dist/README.md
+!/dist/*.zip
+!/dist/installer/
+!/dist/installer/*.exe
 /node_modules
 /public/build
 /public/hot

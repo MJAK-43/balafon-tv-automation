@@ -11,7 +11,7 @@ Provide a local test package that:
 - uses `file` cache/session and `sync` queue to remove Redis dependency
 - creates a default media root automatically
 - can use a bundled PHP runtime from `runtime\php\php.exe`
-- starts through PowerShell scripts today, with a Windows installer later
+- can be installed through the generated Windows installer
 
 ## Current scripts
 
@@ -105,7 +105,7 @@ scripts\start_windows_local.cmd
 So the tester no longer needs `composer install` or `npm install`.
 If the release also contains `runtime\php\php.exe`, the tester does not need a separate PHP installation either.
 
-## Optional installer packaging
+## Windows installer
 
 An Inno Setup definition is included at:
 
@@ -118,6 +118,16 @@ Helper script:
 ```bat
 scripts\compile_windows_installer.cmd
 ```
+
+The generated installer is published at:
+
+```text
+dist\installer\Balafon-Setup.exe
+```
+
+It installs Balafon per user, initializes the application automatically, and
+adds Start menu shortcuts. The current test installer is not code-signed, so
+Windows SmartScreen may display a warning.
 
 ## Developer workflow from a Git clone
 
@@ -141,10 +151,11 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start_windows_local.ps1
 
 ## Non-technical tester workflow
 
-Testers should receive the generated Windows release or installer rather than
-cloning the Git repository. The generated package contains `vendor` and the
-compiled frontend assets, so Composer and Node.js are not needed on the tester
-machine. If `runtime\php\php.exe` is bundled, PHP is not needed either.
+Testers should download `dist\installer\Balafon-Setup.exe` or the portable ZIP
+from the Git repository. They must not run `install_windows_tester.cmd` from the
+source tree itself. The generated artifacts contain `vendor`, the compiled
+frontend assets and `runtime\php\php.exe`, so PHP, Composer and Node.js are not
+needed on the tester machine.
 
 Generated releases must never contain:
 
@@ -153,17 +164,11 @@ Generated releases must never contain:
 - application logs or cached runtime files
 - user-uploaded media
 
-## Remaining external prerequisite
+## Runtime requirements
 
-Today the only prerequisite still outside the repo is a Windows PHP runtime with the required extensions:
-
-- `openssl`
-- `mbstring`
-- `fileinfo`
-- `pdo_sqlite`
-- `sqlite3`
-
-Composer and Node.js are only needed on the build machine, not on the tester machine, if you distribute the prepared release package.
+The published ZIP and EXE include PHP 8.2.18 with `openssl`, `mbstring`,
+`fileinfo`, `pdo_sqlite` and `sqlite3`. Composer and Node.js are only needed on
+the build machine or when installing directly from a Git clone.
 
 ## Fully self-contained package
 
@@ -177,4 +182,5 @@ $phpRuntime = Split-Path -Parent (Get-Command php).Source
 
 The script verifies `php.exe` and all required extensions, removes
 machine-specific paths from `php.ini`, and places the runtime only in the
-generated package. The PHP runtime is not committed to Git.
+generated package. The unpacked PHP runtime is not committed to Git; it is
+distributed only inside the ZIP and EXE artifacts.

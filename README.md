@@ -34,18 +34,52 @@ mais la matrice réelle vMix 25/29 doit encore être terminée.
 | Simulateur vMix | Validé |
 | vMix 29.0.0.48 | Audit antérieur réussi, recette de la RC encore bloquée |
 | vMix 25 | Non testé — environnement séparé nécessaire |
-| Installateur Windows `.exe` | Non généré — Inno Setup 6 requis |
+| Installateur Windows `.exe` | Généré — 43,07 Mo |
 
 Le rapport détaillé se trouve dans
 [docs/release-validation-2026-07-29.md](docs/release-validation-2026-07-29.md).
 
 ## Installation recommandée pour un collègue testeur
 
-Le testeur ne doit pas cloner le dépôt et ne doit pas installer Composer ou
-Node.js. Il doit recevoir le package :
+Le testeur ne doit pas exécuter `install_windows_tester.cmd` directement depuis
+les sources clonées : le dépôt source n’inclut ni PHP, ni `vendor`, ni le
+frontend compilé. Il doit télécharger l’un des deux artefacts du dossier
+[`dist`](dist/README.md).
+
+### Option 1 — installateur Windows
+
+Télécharger et exécuter :
 
 ```text
-Balafon-0.1.0-rc.1-windows-x64.zip
+dist\installer\Balafon-Setup.exe
+```
+
+L’installateur :
+
+- installe Balafon dans le profil Windows de l’utilisateur ;
+- configure automatiquement SQLite et la clé d’application ;
+- embarque PHP 8.2.18 et toutes les dépendances ;
+- crée les raccourcis du menu Démarrer ;
+- peut créer un raccourci sur le Bureau ;
+- propose de lancer Balafon à la fin.
+
+Empreinte de l’installateur :
+
+```text
+SHA-256
+95218D5D3785186CF86941F53804F3A9685FCD27EC4F9A0621EC3E6821C72530
+```
+
+L’EXE n’est pas signé avec un certificat commercial. Windows SmartScreen peut
+donc afficher un avertissement. Vérifier l’empreinte SHA-256 avant de choisir
+**Informations complémentaires**, puis **Exécuter quand même**.
+
+### Option 2 — ZIP portable
+
+Télécharger :
+
+```text
+dist\Balafon-0.1.0-rc.1-windows-x64.zip
 ```
 
 Le package validé contient PHP 8.2.18, les dépendances Laravel et les fichiers
@@ -55,7 +89,7 @@ Empreinte du package validé :
 
 ```text
 SHA-256
-BF0B461318F31A69650074C2EFAF4ADCA0BDF0D7156DD771317CE942BEA55F85
+346787A205959EFC1E8B1AF3E8549908DFC2E54DD1CCABACEF6D741CA2696E31
 ```
 
 Procédure :
@@ -204,8 +238,9 @@ Le script :
 - refuse ou supprime les bases SQLite locales ;
 - exclut `.env`, les logs, les caches et les médias utilisateurs.
 
-Le dossier `dist` et le runtime PHP ne doivent jamais être commités dans Git.
-Ils doivent être distribués comme fichiers de release.
+Le dossier de travail décompressé `dist\windows-release` et le runtime PHP
+source ne doivent pas être commités. Seuls le ZIP portable, l’installateur EXE
+et `dist\README.md` sont volontairement publiés dans Git pour les testeurs.
 
 ## Générer l’installateur Windows `.exe`
 
@@ -235,12 +270,12 @@ Si le message `Inno Setup compiler not found` apparaît, vérifier la présence 
 `ISCC.exe` dans l’un de ces dossiers :
 
 ```text
+C:\Users\<utilisateur>\AppData\Local\Programs\Inno Setup 6\
 C:\Program Files (x86)\Inno Setup 6\
 C:\Program Files\Inno Setup 6\
 ```
 
-L’absence de l’EXE ne bloque pas les tests : le ZIP portable et
-`install_windows_tester.cmd` restent utilisables.
+Le ZIP portable reste disponible comme solution de secours.
 
 ## Données à ne jamais publier
 
@@ -252,10 +287,11 @@ Ne jamais ajouter dans Git ou dans un package de test :
 - logs et caches ;
 - `vendor`, `node_modules` et `public\build` dans le dépôt Git ;
 - profils de navigateur et dossiers `.tmp` ;
-- runtime PHP dans le dépôt Git.
+- runtime PHP décompressé dans le dépôt Git.
 
 Les exemples `.env.example` et `.env.windows.local.example` peuvent être
-versionnés, car ils ne contiennent pas de secret réel.
+versionnés, car ils ne contiennent pas de secret réel. Le runtime PHP est
+présent uniquement à l’intérieur des deux artefacts contrôlés de `dist`.
 
 ## Téléversements volumineux
 

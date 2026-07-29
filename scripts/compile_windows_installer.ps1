@@ -23,6 +23,7 @@ elseif (-not [System.IO.Path]::IsPathRooted($InnoScript)) {
 
 $compilerCandidates = @(
     (Get-Command ISCC -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
+    (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe'),
     'C:\Program Files (x86)\Inno Setup 6\ISCC.exe',
     'C:\Program Files\Inno Setup 6\ISCC.exe'
 ) | Where-Object { $_ }
